@@ -15,7 +15,7 @@ import { getEventsPath, getSymbolsPath } from "./paths";
 import { KagentEvent, SymbolsFile } from "./types";
 
 export type RecordActor = "agent" | "human" | "unknown";
-export type RecordSource = "afterFileEdit" | "onSave" | "simulate";
+export type RecordSource = "afterFileEdit" | "onSave" | "onEdit" | "simulate";
 
 export interface RecordChangeInput {
   workspaceRoot: string;
@@ -89,7 +89,7 @@ function shouldCoalesceWithDir(
   }
   if (
     source === "onSave" &&
-    existing.last_source === "afterFileEdit" &&
+    (existing.last_source === "afterFileEdit" || existing.last_source === "onEdit") &&
     existing.last_lines === linesAfter
   ) {
     return true;
@@ -99,6 +99,11 @@ function shouldCoalesceWithDir(
 
 export function recordFileChange(input: RecordChangeInput): RecordChangeResult {
   const kagentDir = path.join(input.workspaceRoot, ".kagent");
+
+  if (input.relativeFile.startsWith(".kagent/") || input.relativeFile.startsWith(".kagent\\")) {
+    return { recorded: false, reason: "ignored" };
+  }
+
   const config = loadKagentConfig(kagentDir);
 
   if (isIgnored(input.relativeFile, config)) {

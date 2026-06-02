@@ -11,7 +11,7 @@ import {
 } from "./colorScheme";
 import { buildMarketPayload } from "./candleBuilder";
 import { readAllEvents, readSymbols } from "./eventStore";
-import { isCaptureOnSaveEnabled } from "./kagentConfig";
+import { isCaptureOnEditEnabled, isCaptureOnSaveEnabled } from "./kagentConfig";
 import { getKagentDir, getKagentWorkspaceFolder } from "./paths";
 import { DELIST_PURGE_AFTER_MS, syncDelistedSymbols } from "./symbolDelist";
 import { isFileMissingInWorkspace } from "./workspaceFiles";
@@ -157,7 +157,11 @@ export class MarketViewProvider implements vscode.WebviewViewProvider {
     }
     const pattern = new vscode.RelativePattern(folder, "**/*");
     const watcher = vscode.workspace.createFileSystemWatcher(pattern);
-    watcher.onDidDelete(() => {
+    watcher.onDidDelete((uri) => {
+      const kagentDir = getKagentDir();
+      if (kagentDir && (uri.fsPath.startsWith(kagentDir + path.sep) || uri.fsPath === kagentDir)) {
+        return;
+      }
       if (this.refreshTimer) {
         clearTimeout(this.refreshTimer);
       }
@@ -212,6 +216,7 @@ export class MarketViewProvider implements vscode.WebviewViewProvider {
     MarketPayload & {
       hooksOk: boolean;
       captureOnSave: boolean;
+      captureOnEdit: boolean;
       captureEnabled: boolean;
       kagentDir: string | null;
       colorScheme: ColorScheme;
@@ -230,6 +235,7 @@ export class MarketViewProvider implements vscode.WebviewViewProvider {
         missingFiles: [],
         hooksOk: false,
         captureOnSave: true,
+        captureOnEdit: true,
         captureEnabled: true,
         kagentDir: null,
         colorScheme: getColorScheme(),
@@ -268,13 +274,15 @@ export class MarketViewProvider implements vscode.WebviewViewProvider {
       ? fs.existsSync(path.join(workspaceRoot, ".cursor", "hooks.json"))
       : false;
     const captureOnSave = isCaptureOnSaveEnabled(kagentDir);
+    const captureOnEdit = isCaptureOnEditEnabled(kagentDir);
 
     return {
       ...market,
       missingFiles,
       hooksOk,
       captureOnSave,
-      captureEnabled: hooksOk || captureOnSave,
+      captureOnEdit,
+      captureEnabled: hooksOk || captureOnSave || captureOnEdit,
       kagentDir,
       colorScheme: getColorScheme(),
       colorTone: getColorTone(),

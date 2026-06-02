@@ -5,6 +5,7 @@ import { getKagentDir } from "./paths";
 
 export interface KagentCaptureConfig {
   onSave?: boolean;
+  onEdit?: boolean;
   agentHook?: boolean;
   coalesceWindowMs?: number;
 }
@@ -17,13 +18,16 @@ export interface KagentConfigFile {
 const DEFAULT_IGNORE = [
   "**/node_modules/**",
   "**/.git/**",
+  ".git/**",
   "**/.kagent/**",
+  ".kagent/**",
   "**/dist/**",
   "**/out/**",
 ];
 
 const DEFAULT_CAPTURE: Required<KagentCaptureConfig> = {
   onSave: true,
+  onEdit: true,
   agentHook: true,
   coalesceWindowMs: 1500,
 };
@@ -65,6 +69,19 @@ export function isCaptureOnSaveEnabled(kagentDir: string | undefined): boolean {
     return vscodeOverride;
   }
   return loadKagentConfig(kagentDir).capture?.onSave !== false;
+}
+
+export function isCaptureOnEditEnabled(kagentDir: string | undefined): boolean {
+  if (!kagentDir) {
+    return true;
+  }
+  const vscodeOverride = vscode.workspace
+    .getConfiguration("kagent")
+    .get<boolean>("capture.onEdit");
+  if (vscodeOverride !== undefined) {
+    return vscodeOverride;
+  }
+  return loadKagentConfig(kagentDir).capture?.onEdit !== false;
 }
 
 export function getCoalesceWindowMs(kagentDir: string): number {

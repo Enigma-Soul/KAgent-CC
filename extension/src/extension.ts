@@ -2,9 +2,10 @@ import * as vscode from "vscode";
 import { isMarketColorConfigChange } from "./colorScheme";
 import { MarketViewProvider } from "./marketViewProvider";
 import { hooksConfigured, installProjectHooks } from "./hookInstaller";
-import { isCaptureOnSaveEnabled } from "./kagentConfig";
+import { isCaptureOnEditEnabled, isCaptureOnSaveEnabled } from "./kagentConfig";
 import { getKagentDir, getKagentWorkspaceFolder } from "./paths";
 import { registerSaveCapture } from "./saveCapture";
+import { registerEditCapture } from "./editCapture";
 import { syncDelistedSymbols } from "./symbolDelist";
 
 let marketProvider: MarketViewProvider | undefined;
@@ -48,6 +49,7 @@ export function activate(context: vscode.ExtensionContext): void {
     })
   );
 
+  registerEditCapture(context);
   registerSaveCapture(context);
 
   const syncDelistAndRefresh = (): void => {
@@ -79,9 +81,10 @@ export function activate(context: vscode.ExtensionContext): void {
     }
   }
   const onSave = isCaptureOnSaveEnabled(kagentDir);
+  const onEdit = isCaptureOnEditEnabled(kagentDir);
   const hooks = root ? hooksConfigured(root) : false;
 
-  if (root && onSave && !hooks) {
+  if (root && !onEdit && onSave && !hooks) {
     void vscode.window
       .showInformationMessage(
         "KAgent: 已记录保存时的手动编辑。安装 Hooks 可同时记录 Agent 修改。",
@@ -92,10 +95,10 @@ export function activate(context: vscode.ExtensionContext): void {
           void installProjectHooks(context.extensionUri);
         }
       });
-  } else if (root && !onSave && !hooks) {
+  } else if (root && !onEdit && !onSave && !hooks) {
     void vscode.window
       .showInformationMessage(
-        "KAgent: 保存采集已关闭，且未配置 Hooks。请在设置中开启 kagent.capture.onSave 或安装 Hooks。",
+        "KAgent: 采集已关闭。请在设置中开启 kagent.capture.onEdit 或 kagent.capture.onSave，或安装 Hooks。",
         "安装 Hooks"
       )
       .then((choice) => {
