@@ -1,4 +1,4 @@
-export type KagentEventSource = "afterFileEdit" | "onSave" | "simulate" | string;
+export type KagentEventSource = "afterFileEdit" | "onSave" | "onEdit" | "simulate" | string;
 export type KagentEventActor = "agent" | "human" | "unknown";
 
 export interface KagentEvent {

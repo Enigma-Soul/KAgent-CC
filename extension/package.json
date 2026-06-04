@@ -3,7 +3,7 @@
   "icon": "icon.png",
   "displayName": "KAgent",
   "description": "将文件保存与 Agent 修改以股票 K 线图展示（一文件一股）",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "publisher": "JStone",
   "license": "MIT",
   "repository": {
@@ -112,6 +112,11 @@
           "type": "boolean",
           "default": true,
           "description": "在每次保存（含自动保存）时记录一根 K 线"
+        },
+        "kagent.capture.onEdit": {
+          "type": "boolean",
+          "default": true,
+          "description": "在编辑器内容变化时自动记录 K 线（适用于 Trae 等不支持 Cursor Hooks 的编辑器，启用后会自动跳过保存采集以避免重复）"
         }
       }
     }

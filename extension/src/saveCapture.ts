@@ -2,7 +2,7 @@ import * as fs from "fs";
 import * as path from "path";
 import * as vscode from "vscode";
 import { readSymbols } from "./eventStore";
-import { ensureKagentConfig, isCaptureOnSaveEnabled } from "./kagentConfig";
+import { ensureKagentConfig, isCaptureOnEditEnabled, isCaptureOnSaveEnabled } from "./kagentConfig";
 import { countLines } from "./lineStats";
 import { countFileLines, recordFileChange } from "./recordChange";
 
@@ -202,6 +202,10 @@ async function handleSave(doc: vscode.TextDocument): Promise<void> {
   const kagentDir = path.join(workspaceRoot, ".kagent");
 
   if (!isCaptureOnSaveEnabled(kagentDir)) {
+    return;
+  }
+
+  if (isCaptureOnEditEnabled(kagentDir)) {
     return;
   }
 

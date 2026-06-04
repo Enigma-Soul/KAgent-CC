@@ -12,7 +12,9 @@ const RETRY_MS = 25;
 const DEFAULT_IGNORE = [
   "**/node_modules/**",
   "**/.git/**",
+  ".git/**",
   "**/.kagent/**",
+  ".kagent/**",
   "**/dist/**",
   "**/out/**",
 ];
@@ -229,6 +231,9 @@ function readFileText(absPath) {
  */
 export function recordFileChange(input) {
   const kagentDir = path.join(input.workspaceRoot, ".kagent");
+  if (input.relativeFile.startsWith(".kagent/") || input.relativeFile.startsWith(".kagent\\")) {
+    return { recorded: false, reason: "ignored" };
+  }
   const config = loadConfig(kagentDir);
   if (isIgnored(input.relativeFile, config)) {
     return { recorded: false, reason: "ignored" };

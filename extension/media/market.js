@@ -547,13 +547,20 @@
 
   function updateBanner(payload) {
     const onSave = payload.captureOnSave !== false;
+    const onEdit = payload.captureOnEdit !== false;
     if (!payload.captureEnabled) {
       els.banner.textContent =
-        "未启用采集。请保存文件（kagent.capture.onSave）或安装 Hooks 记录 Agent。";
+        "未启用采集。请开启 kagent.capture.onEdit 或 kagent.capture.onSave，或安装 Hooks。";
       els.banner.classList.remove("hidden");
       return;
     }
-    if (!payload.hooksOk && onSave) {
+    if (!payload.hooksOk && onEdit && !payload.symbols?.length) {
+      els.banner.textContent =
+        "已启用编辑时采集。编辑文件后，此处会出现股票列表。";
+      els.banner.classList.remove("hidden");
+      return;
+    }
+    if (!payload.hooksOk && onSave && !onEdit) {
       els.banner.textContent =
         "已记录保存时的编辑。安装 Hooks 可同时记录 Agent：「KAgent: 安装项目 Hooks」";
       els.banner.classList.remove("hidden");
@@ -562,13 +569,15 @@
       }
     }
     if (!payload.symbols?.length) {
-      els.banner.textContent = onSave
-        ? "保存工作区文件或让 Agent 修改后，此处会出现股票列表。"
-        : "用 Agent 修改文件后，此处会出现股票列表。";
+      els.banner.textContent = onEdit
+        ? "编辑工作区文件后，此处会出现股票列表。"
+        : onSave
+          ? "保存工作区文件或让 Agent 修改后，此处会出现股票列表。"
+          : "用 Agent 修改文件后，此处会出现股票列表。";
       els.banner.classList.remove("hidden");
       return;
     }
-    if (!payload.hooksOk && onSave) {
+    if (!payload.hooksOk && (onSave || onEdit)) {
       return;
     }
     els.banner.classList.add("hidden");
