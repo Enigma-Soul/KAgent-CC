@@ -138,19 +138,6 @@ Zero-dependency Node.js. Claude Code edits refresh the chart in real time. State
 
 ---
 
-## 30-second local demo
-
-No Agent required - simulate edits:
-
-```bash
-node scripts/simulate-edit.mjs demo/sample.txt 3
-node scripts/simulate-edit.mjs demo/sample.txt 1
-```
-
-Open the KAgent sidebar or TUI and select `demo/sample.txt`. Full walkthrough: [demo/watch-me.md](demo/watch-me.md).
-
----
-
 ## Architecture
 
 ```mermaid
@@ -192,7 +179,7 @@ flowchart LR
 
 | Issue | Fix |
 |-------|-----|
-| Sidebar / TUI always empty | Install hooks or enable save capture, set workspace Trusted, edit/save files (or run the demo script) |
+| Sidebar / TUI always empty | Install hooks or enable save capture, set workspace Trusted, edit/save files |
 | Hooks never fire | Open the **repo root**; verify `.claude/settings.json` exists |
 | No ST delisted after delete | Use ≥ 0.1.5, Reload Window, click Refresh; only applies to files already in the list |
 | Can't find KAgent in Cursor | Cursor doesn't use Open VSX - use [VSIX](#option-2-vs-code--cursor-extension) or [Releases](https://github.com/Enigma-Soul/KAgent-CC/releases) |
@@ -218,7 +205,6 @@ npm run package                  # -> kagent-x.y.z.vsix
 |-------|------|
 | UI preview | [docs/images/preview-sidebar.png](docs/images/preview-sidebar.png) |
 | Concept art | [docs/images/concept.png](docs/images/concept.png) |
-| Demo walkthrough | [demo/watch-me.md](demo/watch-me.md) |
 
 ### Release (maintainers)
 
