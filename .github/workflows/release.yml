@@ -92,7 +92,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version: "24"
           cache: npm
           cache-dependency-path: extension/package-lock.json
           registry-url: https://registry.npmjs.org
@@ -175,13 +175,29 @@ jobs:
           # 只推 tag（含 commit），不推分支--main 有分支保护
           git push origin "${TAG}"
 
+      - name: Read CHANGELOG
+        id: changelog
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          # 提取 CHANGELOG.md 中对应版本的内容（到下一个 # 或文件尾）
+          BODY=$(awk -v v="# ${VERSION}" '
+            $0 ~ "^# " { if (found) exit; if ($0 == v) found=1; next }
+            found { print }
+          ' CHANGELOG.md)
+          echo "body<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$BODY" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.ext-meta.outputs.tag || github.ref_name }}
-          name: KAgent-CC ${{ steps.ext-meta.outputs.tag || github.ref_name }}
-          generate_release_notes: true
+          name: ${{ steps.ext-meta.outputs.tag || github.ref_name }}
           body: |
+            ${{ steps.changelog.outputs.body }}
+
+            ---
+
             ## Install
 
             | Channel | Command |
@@ -191,12 +207,10 @@ jobs:
             | **VSIX** | Download `${{ steps.ext-meta.outputs.vsix }}` below |
 
             ```bash
-            # CLI
             kagent-cc              # 安装 hooks + 启动 TUI
             kagent-cc tui          # 仅启动 TUI
             kagent-cc uninstall    # 移除 hooks
 
-            # VS Code / Cursor
             cursor --install-extension ${{ steps.ext-meta.outputs.vsix }}
             ```
           files: extension/${{ steps.ext-meta.outputs.vsix }}
