@@ -3,7 +3,7 @@
  * KAgent TUI - 终端 K 线行情查看器
  * 零依赖，纯 Node.js 内置模块。
  *
- * 用法: node scripts/kagent-tui.mjs [工作区根目录]
+ * 用法: kagent-cc tui 或 kagent-cc（默认 = install + tui）
  * 按键: j/k 切换文件 · s 切换 A股/美股 · r 刷新 · q 退出
  */
 import fs from "node:fs";

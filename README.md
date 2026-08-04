@@ -45,17 +45,18 @@ npx @enigma_soul/kagent-cc tui
 
 | 命令 | 说明 |
 |------|------|
-| `npx @enigma_soul/kagent-cc` | 静默安装 hooks（默认） |
-| `npx @enigma_soul/kagent-cc install` | 同上 |
-| `npx @enigma_soul/kagent-cc tui` | 启动终端 K 线查看器 |
+| `npx @enigma_soul/kagent-cc` | 安装 hooks + 启动 TUI（默认） |
+| `npx @enigma_soul/kagent-cc install` | 仅安装 hooks |
+| `npx @enigma_soul/kagent-cc tui` | 仅启动终端 K 线查看器 |
 | `npx @enigma_soul/kagent-cc uninstall` | 移除 hooks |
 
 也可以全局安装后直接使用：
 
 ```bash
 npm install -g @enigma_soul/kagent-cc
-kagent-cc              # 安装 hooks
-kagent-cc tui          # 启动 TUI
+kagent-cc              # 安装 hooks + 启动 TUI
+kagent-cc install      # 仅安装 hooks
+kagent-cc tui          # 仅启动 TUI
 kagent-cc uninstall    # 移除 hooks
 ```
 

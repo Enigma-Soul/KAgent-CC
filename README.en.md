@@ -45,17 +45,18 @@ npx @enigma_soul/kagent-cc tui
 
 | Command | Description |
 |---------|-------------|
-| `npx @enigma_soul/kagent-cc` | Silently install hooks (default) |
-| `npx @enigma_soul/kagent-cc install` | Same as above |
-| `npx @enigma_soul/kagent-cc tui` | Launch terminal K-line viewer |
+| `npx @enigma_soul/kagent-cc` | Install hooks + launch TUI (default) |
+| `npx @enigma_soul/kagent-cc install` | Install hooks only |
+| `npx @enigma_soul/kagent-cc tui` | Launch terminal K-line viewer only |
 | `npx @enigma_soul/kagent-cc uninstall` | Remove hooks |
 
 Or install globally and use directly:
 
 ```bash
 npm install -g @enigma_soul/kagent-cc
-kagent-cc              # Install hooks
-kagent-cc tui          # Launch TUI
+kagent-cc              # Install hooks + launch TUI
+kagent-cc install      # Install hooks only
+kagent-cc tui          # Launch TUI only
 kagent-cc uninstall    # Remove hooks
 ```
 
