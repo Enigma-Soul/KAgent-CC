@@ -1,3 +1,9 @@
+# 0.1.3
+
+### Fix(cli)
+
+- Bun 打包改用 `--format esm` 保留 `import fs from "node:fs"`，修复 `--external` 仍把 fs 内联为空对象的问题
+
 # 0.1.2
 
 ### Fix(cli)

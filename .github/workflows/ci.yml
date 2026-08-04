@@ -32,10 +32,10 @@ jobs:
         uses: oven-sh/setup-bun@v2
 
       - name: Bundle capture hook
-        run: bun build src/capture.mjs --external node:fs --external node:path --outfile dist/capture.mjs
+        run: bun build src/capture.mjs --format esm --outfile dist/capture.mjs
 
       - name: Bundle TUI
-        run: bun build src/tui.mjs --external node:fs --external node:path --outfile dist/tui.mjs
+        run: bun build src/tui.mjs --format esm --outfile dist/tui.mjs
 
       - name: Verify CLI syntax
         run: node --check bin/kagent-cc.mjs && node --check src/installer.mjs && node --check dist/capture.mjs && node --check dist/tui.mjs
