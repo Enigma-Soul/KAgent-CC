@@ -13,8 +13,8 @@
     "dist/"
   ],
   "scripts": {
-    "build": "bun build src/capture.mjs --format esm --outfile dist/capture.mjs && bun build src/tui.mjs --format esm --outfile dist/tui.mjs",
-    "dev:hook": "bun build src/capture.mjs --format esm --outfile .claude/hooks/kagent-cc-capture.mjs",
+    "build": "bun build src/capture.mjs --external \"node:*\" --outfile dist/capture.mjs && bun build src/tui.mjs --external \"node:*\" --outfile dist/tui.mjs",
+    "dev:hook": "bun build src/capture.mjs --external \"node:*\" --outfile .claude/hooks/kagent-cc-capture.mjs",
     "dev:tui": "node src/tui.mjs"
   },
   "keywords": [

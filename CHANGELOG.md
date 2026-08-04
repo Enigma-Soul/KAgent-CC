@@ -2,7 +2,8 @@
 
 ### Fix(cli)
 
-- Bun 打包改用 `--format esm` 保留 `import fs from "node:fs"`，修复 `--external` 仍把 fs 内联为空对象的问题
+- Bun 打包用 `--external "node:*"` 保留所有 Node.js 内置模块 import，修复 `node:fs` 内联后变量丢失导致 hook 静默失败
+- 本地验证：hook 正常写入 `.kagent/events.ndjson`
 
 # 0.1.2
 
