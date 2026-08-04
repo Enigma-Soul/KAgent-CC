@@ -9,21 +9,26 @@
  *   kagent-cc uninstall  # 移除 hooks
  */
 import { resolve, dirname } from "node:path";
+import { pathToFileURL } from "node:url";
 import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const cmd = process.argv[2] || "default";
 
+function importRel(p) {
+  return import(pathToFileURL(resolve(__dirname, p)).href);
+}
+
 if (cmd === "default" || cmd === "install" || cmd === "tui") {
   if (cmd === "default" || cmd === "install") {
-    const { install } = await import(resolve(__dirname, "../src/installer.mjs"));
+    const { install } = await importRel("../src/installer.mjs");
     install();
   }
   if (cmd === "default" || cmd === "tui") {
-    await import(resolve(__dirname, "../src/tui.mjs"));
+    await importRel("../src/tui.mjs");
   }
 } else if (cmd === "uninstall") {
-  const { uninstall } = await import(resolve(__dirname, "../src/installer.mjs"));
+  const { uninstall } = await importRel("../src/installer.mjs");
   uninstall();
 } else {
   process.stderr.write("Usage: kagent-cc [install|tui|uninstall]\n");
