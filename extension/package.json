@@ -8,14 +8,14 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/JStone2934/KAgent.git"
+    "url": "https://github.com/Enigma-Soul/KAgent-CC.git"
   },
   "bugs": {
-    "url": "https://github.com/JStone2934/KAgent/issues"
+    "url": "https://github.com/Enigma-Soul/KAgent-CC/issues"
   },
-  "homepage": "https://github.com/JStone2934/KAgent#readme",
+  "homepage": "https://github.com/Enigma-Soul/KAgent-CC#readme",
   "keywords": [
-    "cursor",
+    "claude-code",
     "agent",
     "k-line",
     "visualization",

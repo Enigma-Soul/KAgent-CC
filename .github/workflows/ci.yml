@@ -2,13 +2,19 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, develop]
     paths:
+      - "src/**"
+      - "bin/**"
       - "extension/**"
+      - "package.json"
       - ".github/workflows/**"
   pull_request:
     paths:
+      - "src/**"
+      - "bin/**"
       - "extension/**"
+      - "package.json"
       - ".github/workflows/**"
 
 concurrency:
@@ -16,6 +22,30 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  build-npm:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Bundle capture hook
+        run: bun build src/capture.mjs --outfile dist/capture.mjs
+
+      - name: Bundle TUI
+        run: bun build src/tui.mjs --outfile dist/tui.mjs
+
+      - name: Verify CLI syntax
+        run: node --check bin/kagent-cc.mjs && node --check src/installer.mjs && node --check dist/capture.mjs && node --check dist/tui.mjs
+
+      - name: Upload dist artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: kagent-cc-dist
+          path: dist/
+
   build-extension:
     runs-on: ubuntu-latest
     defaults:
@@ -29,7 +59,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
           cache: npm
           cache-dependency-path: extension/package-lock.json
 

@@ -1,9 +1,19 @@
 #!/usr/bin/env node
 /**
- * Shared KAgent event recorder (used by hook + extension TS port).
+ * KAgent Claude Code 采集 hook
+ * PostToolUse(Edit|Write|MultiEdit) -> .kagent/
+ *
+ * stdin 收到 Claude Code 的 PostToolUse JSON，格式：
+ * { session_id, cwd, tool_name, tool_input: { file_path, ... }, tool_response }
  */
-import fs from "node:fs";
 import path from "node:path";
+import fs from "node:fs";
+
+/**
+ * KAgent 共享事件记录器（hook + TUI 共用）
+ */
+
+
 
 const STALE_MS = 30_000;
 const MAX_WAIT_MS = 8_000;
@@ -229,7 +239,7 @@ function readFileText(absPath) {
 /**
  * @returns {{ recorded: boolean, reason?: string }}
  */
-export function recordFileChange(input) {
+function recordFileChange(input) {
   const kagentDir = path.join(input.workspaceRoot, ".kagent");
   if (input.relativeFile.startsWith(".kagent/") || input.relativeFile.startsWith(".kagent\\")) {
     return { recorded: false, reason: "ignored" };
@@ -347,22 +357,88 @@ export function recordFileChange(input) {
   });
 }
 
-export function countFileLines(absPath) {
+function countFileLines(absPath) {
   return countLines(readFileText(absPath));
 }
 
-export function recordFromHookPayload(payload, workspaceRoot, relativeFile) {
-  const filePath = path.resolve(payload.file_path);
-  const linesAfter = countFileLines(filePath);
-  return recordFileChange({
-    workspaceRoot,
-    relativeFile,
-    linesAfter,
-    edits: payload.edits,
-    source: payload.hook_event_name ?? "afterFileEdit",
-    actor: "agent",
-    conversation_id: payload.conversation_id,
-    generation_id: payload.generation_id,
-    editor: "cursor",
-  });
+/** 读取 symbols.json，判断文件是否已跟踪 */
+function isFileTracked(workspaceRoot, relativeFile) {
+  const symbolsPath = path.join(workspaceRoot, ".kagent", "symbols.json");
+  const doc = loadJson(symbolsPath, { symbols: {} });
+  return Boolean(doc.symbols[relativeFile]);
 }
+
+export { countLines, readFileText };
+
+
+async function readStdin() {
+  const chunks = [];
+  for await (const chunk of process.stdin) {
+    chunks.push(chunk);
+  }
+  const raw = Buffer.concat(chunks).toString("utf8");
+  if (!raw.trim()) return null;
+  return JSON.parse(raw);
+}
+
+function toRelative(filePath, root) {
+  const rel = path.relative(root, filePath);
+  return rel.split(path.sep).join("/");
+}
+
+readStdin()
+  .then((payload) => {
+    if (!payload?.tool_input?.file_path) {
+      process.exit(0);
+      return;
+    }
+
+    const cwd = payload.cwd || process.cwd();
+    const filePath = path.resolve(payload.tool_input.file_path);
+    const relativeFile = toRelative(filePath, cwd);
+    if (relativeFile.startsWith("..")) {
+      process.exit(0);
+      return;
+    }
+
+    const toolName = payload.tool_name;
+    let edits;
+    let oldText;
+
+    if (toolName === "Edit") {
+      edits = [
+        {
+          old_string: payload.tool_input.old_string ?? "",
+          new_string: payload.tool_input.new_string ?? "",
+        },
+      ];
+    } else if (toolName === "MultiEdit") {
+      edits = payload.tool_input.edits ?? [];
+    } else if (toolName === "Write") {
+      if (!isFileTracked(cwd, relativeFile)) {
+        oldText = "";
+      }
+    } else {
+      process.exit(0);
+      return;
+    }
+
+    const linesAfter = countFileLines(filePath);
+
+    recordFileChange({
+      workspaceRoot: cwd,
+      relativeFile,
+      linesAfter,
+      edits,
+      oldText,
+      source: "claude-code",
+      actor: "agent",
+      editor: "claude-code",
+      conversation_id: payload.session_id ?? null,
+    });
+    process.exit(0);
+  })
+  .catch((err) => {
+    console.error("[kagent-cc-capture]", err.message);
+    process.exit(0);
+  });

@@ -1,4 +1,9 @@
 .kagent/
+dist/
+node_modules/
+.claude/
+.vscode/
+.cursor/
 extension/node_modules/
 extension/out/
 extension/dist/

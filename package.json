@@ -1,0 +1,37 @@
+{
+  "name": "@enigma_soul/kagent-cc",
+  "version": "0.1.0",
+  "description": "Claude Code Agent file edits as K-line candlestick charts",
+  "license": "MIT",
+  "author": "Enigma_Soul",
+  "bin": {
+    "kagent-cc": "./bin/kagent-cc.mjs"
+  },
+  "files": [
+    "bin/",
+    "src/",
+    "dist/"
+  ],
+  "scripts": {
+    "build": "bun build src/capture.mjs --outfile dist/capture.mjs && bun build src/tui.mjs --outfile dist/tui.mjs",
+    "dev:hook": "bun build src/capture.mjs --outfile .claude/hooks/kagent-cc-capture.mjs",
+    "dev:tui": "node src/tui.mjs"
+  },
+  "keywords": [
+    "claude-code",
+    "agent",
+    "k-line",
+    "candlestick",
+    "visualization",
+    "hooks",
+    "terminal"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Enigma-Soul/KAgent-CC.git"
+  },
+  "homepage": "https://github.com/Enigma-Soul/KAgent-CC#readme",
+  "bugs": {
+    "url": "https://github.com/Enigma-Soul/KAgent-CC/issues"
+  }
+}

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Shared KAgent event recorder (used by hook + extension TS port).
+ * KAgent 共享事件记录器（hook + TUI 共用）
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -12,6 +12,7 @@ const RETRY_MS = 25;
 const DEFAULT_IGNORE = [
   "**/node_modules/**",
   "**/.git/**",
+  ".git/**",
   "**/.kagent/**",
   ".kagent/**",
   "**/dist/**",
@@ -350,18 +351,11 @@ export function countFileLines(absPath) {
   return countLines(readFileText(absPath));
 }
 
-export function recordFromHookPayload(payload, workspaceRoot, relativeFile) {
-  const filePath = path.resolve(payload.file_path);
-  const linesAfter = countFileLines(filePath);
-  return recordFileChange({
-    workspaceRoot,
-    relativeFile,
-    linesAfter,
-    edits: payload.edits,
-    source: payload.hook_event_name ?? "afterFileEdit",
-    actor: "agent",
-    conversation_id: payload.conversation_id,
-    generation_id: payload.generation_id,
-    editor: "cursor",
-  });
+/** 读取 symbols.json，判断文件是否已跟踪 */
+export function isFileTracked(workspaceRoot, relativeFile) {
+  const symbolsPath = path.join(workspaceRoot, ".kagent", "symbols.json");
+  const doc = loadJson(symbolsPath, { symbols: {} });
+  return Boolean(doc.symbols[relativeFile]);
 }
+
+export { countLines, readFileText };

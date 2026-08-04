@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import { isMarketColorConfigChange } from "./colorScheme";
 import { MarketViewProvider } from "./marketViewProvider";
-import { hooksConfigured, installProjectHooks } from "./hookInstaller";
+import { ensureClaudeCodeHooks, hooksConfigured, installProjectHooks } from "./hookInstaller";
 import { isCaptureOnEditEnabled, isCaptureOnSaveEnabled } from "./kagentConfig";
 import { getKagentDir, getKagentWorkspaceFolder } from "./paths";
 import { registerSaveCapture } from "./saveCapture";
@@ -84,21 +84,15 @@ export function activate(context: vscode.ExtensionContext): void {
   const onEdit = isCaptureOnEditEnabled(kagentDir);
   const hooks = root ? hooksConfigured(root) : false;
 
-  if (root && !onEdit && onSave && !hooks) {
+  // 启动时静默安装 Claude Code hooks
+  if (root && !hooks) {
+    ensureClaudeCodeHooks(root, context.extensionUri);
+  }
+
+  if (root && !onEdit && !onSave && !hooks) {
     void vscode.window
       .showInformationMessage(
-        "KAgent: 已记录保存时的手动编辑。安装 Hooks 可同时记录 Agent 修改。",
-        "安装 Hooks"
-      )
-      .then((choice) => {
-        if (choice === "安装 Hooks") {
-          void installProjectHooks(context.extensionUri);
-        }
-      });
-  } else if (root && !onEdit && !onSave && !hooks) {
-    void vscode.window
-      .showInformationMessage(
-        "KAgent: 采集已关闭。请在设置中开启 kagent.capture.onEdit 或 kagent.capture.onSave，或安装 Hooks。",
+        "KAgent: 采集已关闭。请在设置中开启 kagent.capture.onEdit 或 kagent.capture.onSave。",
         "安装 Hooks"
       )
       .then((choice) => {

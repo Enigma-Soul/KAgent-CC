@@ -1,10 +1,15 @@
 name: Release
 
 on:
+  push:
+    tags:
+      - "v*"
+    branches:
+      - main
   workflow_dispatch:
     inputs:
       version_bump:
-        description: Semver bump, or publish current package version
+        description: Semver bump
         required: true
         default: patch
         type: choice
@@ -14,7 +19,7 @@ on:
           - minor
           - major
       publish_openvsx:
-        description: Publish to Open VSX Registry
+        description: Publish to Open VSX
         required: true
         default: true
         type: boolean
@@ -27,102 +32,173 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # PR 合并到 main 时：自动 bump patch + 打 tag，触发后续发版
+  auto-tag:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    outputs:
+      tagged: ${{ steps.tag.outputs.tagged }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Bump patch and tag
+        id: tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          # 读取扩展版本作为基准
+          VERSION=$(node -p "require('./extension/package.json').version")
+          TAG="v${VERSION}"
+
+          # 如果 tag 已存在，bump patch
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            cd extension && npm version patch --no-git-tag-version && cd ..
+            npm version patch --no-git-tag-version
+            VERSION=$(node -p "require('./extension/package.json').version")
+            TAG="v${VERSION}"
+          fi
+
+          git add package.json extension/package.json extension/package-lock.json
+          git commit -m "chore: release v${VERSION}" || true
+          git tag "$TAG"
+          git push origin HEAD
+          git push origin "$TAG"
+          echo "tagged=true" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
   release:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: extension
-
+    if: |
+      (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) ||
+      github.event_name == 'workflow_dispatch'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
           cache: npm
           cache-dependency-path: extension/package-lock.json
+          registry-url: https://registry.npmjs.org
 
-      - name: Resolve version
-        id: meta
+      # ── npm 包 ──
+      - name: Resolve npm version
+        id: npm-meta
+        if: github.event_name == 'workflow_dispatch'
         run: |
           if [ "${{ inputs.version_bump }}" != "current" ]; then
             npm version ${{ inputs.version_bump }} --no-git-tag-version
           fi
           VERSION=$(node -p "require('./package.json').version")
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Bundle dist
+        run: |
+          bun build src/capture.mjs --outfile dist/capture.mjs
+          bun build src/tui.mjs --outfile dist/tui.mjs
+
+      - name: Publish to npm
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      # ── VS Code 扩展 ──
+      - name: Resolve extension version
+        id: ext-meta
+        working-directory: extension
+        run: |
+          if [ "${{ github.event_name == 'workflow_dispatch' }}" = "true" ] && [ "${{ inputs.version_bump }}" != "current" ]; then
+            npm version ${{ inputs.version_bump }} --no-git-tag-version
+          fi
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "tag=v${VERSION}" >> "$GITHUB_OUTPUT"
           echo "vsix=kagent-${VERSION}.vsix" >> "$GITHUB_OUTPUT"
-          echo "Release version: v${VERSION}"
 
-      - name: Install dependencies
+      - name: Install extension dependencies
+        working-directory: extension
         run: npm ci
 
-      - name: Compile
+      - name: Compile extension
+        working-directory: extension
         run: npm run compile
 
       - name: Package VSIX
+        working-directory: extension
         run: npx @vscode/vsce package --no-dependencies
 
       - name: Validate Open VSX token
-        if: inputs.publish_openvsx
+        if: github.event_name == 'workflow_dispatch' && inputs.publish_openvsx
         env:
           OVSX_PAT: ${{ secrets.OVSX_PAT }}
         run: |
           if [ -z "$OVSX_PAT" ]; then
-            echo "::error::OVSX_PAT secret is missing. Add it under Settings → Secrets → Actions, or disable Open VSX publish."
+            echo "::error::OVSX_PAT secret is missing."
             exit 1
           fi
 
       - name: Publish to Open VSX
-        if: inputs.publish_openvsx
+        if: github.event_name == 'workflow_dispatch' && inputs.publish_openvsx
+        working-directory: extension
         env:
           OVSX_PAT: ${{ secrets.OVSX_PAT }}
         run: npx ovsx publish --no-dependencies -p "$OVSX_PAT"
 
+      # ── Git tag + GitHub Release ──
       - name: Commit version bump and push tag
-        if: inputs.version_bump != 'current'
-        working-directory: ${{ github.workspace }}
+        if: github.event_name == 'workflow_dispatch' && inputs.version_bump != 'current'
         env:
-          VERSION: ${{ steps.meta.outputs.version }}
-          TAG: ${{ steps.meta.outputs.tag }}
+          VERSION: ${{ steps.ext-meta.outputs.version }}
+          TAG: ${{ steps.ext-meta.outputs.tag }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add extension/package.json extension/package-lock.json
-          git commit -m "chore(extension): release v${VERSION}"
+          git add package.json extension/package.json extension/package-lock.json
+          git commit -m "chore: release v${VERSION}"
           git tag "${TAG}"
           git push origin HEAD
           git push origin "${TAG}"
 
       - name: Create GitHub Release
-        if: inputs.version_bump != 'current'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.meta.outputs.tag }}
-          name: KAgent ${{ steps.meta.outputs.tag }}
+          tag_name: ${{ steps.ext-meta.outputs.tag || github.ref_name }}
+          name: KAgent-CC ${{ steps.ext-meta.outputs.tag || github.ref_name }}
           generate_release_notes: true
           body: |
             ## Install
 
-            | Channel | Link |
-            |---------|------|
-            | **VSIX (Cursor)** | Download `${{ steps.meta.outputs.vsix }}` below |
-            | **Open VSX** | https://open-vsx.org/extension/JStone/kagent |
+            | Channel | Command |
+            |---------|---------|
+            | **npm** | `npm install -g @enigma_soul/kagent-cc` |
+            | **npx** | `npx @enigma_soul/kagent-cc` |
+            | **VSIX** | Download `${{ steps.ext-meta.outputs.vsix }}` below |
 
             ```bash
-            cursor --install-extension ${{ steps.meta.outputs.vsix }}
-            codium --install-extension JStone.kagent
-            ```
+            # CLI
+            kagent-cc              # 安装 hooks + 启动 TUI
+            kagent-cc tui          # 仅启动 TUI
+            kagent-cc uninstall    # 移除 hooks
 
-            See [README](https://github.com/${{ github.repository }}#readme) for hooks setup.
-          files: extension/${{ steps.meta.outputs.vsix }}
+            # VS Code / Cursor
+            cursor --install-extension ${{ steps.ext-meta.outputs.vsix }}
+            ```
+          files: extension/${{ steps.ext-meta.outputs.vsix }}
 
       - name: Upload VSIX artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ steps.meta.outputs.vsix }}
-          path: extension/${{ steps.meta.outputs.vsix }}
+          name: ${{ steps.ext-meta.outputs.vsix }}
+          path: extension/${{ steps.ext-meta.outputs.vsix }}
