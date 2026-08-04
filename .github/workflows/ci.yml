@@ -41,6 +41,7 @@ jobs:
         run: node --check bin/kagent-cc.mjs && node --check src/installer.mjs && node --check dist/capture.mjs && node --check dist/tui.mjs
 
       - name: Upload dist artifact
+        if: github.event_name == 'push'
         uses: actions/upload-artifact@v4
         with:
           name: kagent-cc-dist
@@ -70,9 +71,11 @@ jobs:
         run: npm run compile
 
       - name: Package VSIX
+        if: github.event_name == 'push'
         run: npx @vscode/vsce package --no-dependencies
 
       - name: Upload VSIX artifact
+        if: github.event_name == 'push'
         uses: actions/upload-artifact@v4
         with:
           name: kagent-vsix
