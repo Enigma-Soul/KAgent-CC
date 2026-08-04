@@ -1,3 +1,14 @@
+# 0.1.1
+
+### Fix(cli)
+
+- `bin/kagent-cc.mjs` 动态 import 用 `pathToFileURL` 转换 Windows 路径，修复 `ERR_UNSUPPORTED_ESM_URL_SCHEME`
+
+### Chore(ci)
+
+- PR 仅编译检查不打包，push 时才打包上传 artifact
+- Node.js 24
+
 # 0.1.0
 
 ### Feat(cli)
