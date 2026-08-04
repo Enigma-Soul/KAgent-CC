@@ -5,3 +5,5 @@ line-1779690668991-0
 line-1779690668991-1
 line-1779690668991-2
 line-1779690669126-0
+KAgent Claude Code hook test line
+second edit from Claude Code

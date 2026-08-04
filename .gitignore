@@ -1,4 +1,6 @@
 .kagent/
+dist/
+node_modules/
 extension/node_modules/
 extension/out/
 extension/dist/
