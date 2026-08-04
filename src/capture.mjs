@@ -6,6 +6,7 @@
  * stdin 收到 Claude Code 的 PostToolUse JSON，格式：
  * { session_id, cwd, tool_name, tool_input: { file_path, ... }, tool_response }
  */
+import fs from "node:fs";
 import path from "node:path";
 import {
   recordFileChange,
