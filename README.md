@@ -138,19 +138,6 @@ kagent-cc tui
 
 ---
 
-## 30 秒本地演示
-
-无需启动 Agent，用脚本模拟编辑：
-
-```bash
-node scripts/simulate-edit.mjs demo/sample.txt 3
-node scripts/simulate-edit.mjs demo/sample.txt 1
-```
-
-打开 KAgent 侧边栏或 TUI，选中 `demo/sample.txt`。完整剧本见 [demo/watch-me.md](demo/watch-me.md)。
-
----
-
 ## 架构
 
 ```mermaid
@@ -218,7 +205,6 @@ npm run package                  # 产出 kagent-x.y.z.vsix
 |------|------|
 | 界面示意 | [docs/images/preview-sidebar.png](docs/images/preview-sidebar.png) |
 | 概念示意 | [docs/images/concept.png](docs/images/concept.png) |
-| 演示说明 | [demo/watch-me.md](demo/watch-me.md) |
 
 ### 发布 Release（维护者）
 

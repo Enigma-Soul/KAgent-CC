@@ -4,8 +4,10 @@ node_modules/
 .claude/
 .vscode/
 .cursor/
+demo/
 extension/node_modules/
 extension/out/
 extension/dist/
 *.vsix
+*.log
 .DS_Store
