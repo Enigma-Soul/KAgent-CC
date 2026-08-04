@@ -4,6 +4,8 @@ on:
   push:
     tags:
       - "v*"
+    branches:
+      - main
   workflow_dispatch:
     inputs:
       version_bump:
@@ -30,8 +32,50 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # PR 合并到 main 时：自动 bump patch + 打 tag，触发后续发版
+  auto-tag:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    outputs:
+      tagged: ${{ steps.tag.outputs.tagged }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Bump patch and tag
+        id: tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          # 读取扩展版本作为基准
+          VERSION=$(node -p "require('./extension/package.json').version")
+          TAG="v${VERSION}"
+
+          # 如果 tag 已存在，bump patch
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            cd extension && npm version patch --no-git-tag-version && cd ..
+            npm version patch --no-git-tag-version
+            VERSION=$(node -p "require('./extension/package.json').version")
+            TAG="v${VERSION}"
+          fi
+
+          git add package.json extension/package.json extension/package-lock.json
+          git commit -m "chore: release v${VERSION}" || true
+          git tag "$TAG"
+          git push origin HEAD
+          git push origin "$TAG"
+          echo "tagged=true" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
   release:
     runs-on: ubuntu-latest
+    if: |
+      (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) ||
+      github.event_name == 'workflow_dispatch'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -144,8 +188,8 @@ jobs:
 
             ```bash
             # CLI
-            kagent-cc              # 安装 hooks
-            kagent-cc tui          # 启动 TUI
+            kagent-cc              # 安装 hooks + 启动 TUI
+            kagent-cc tui          # 仅启动 TUI
             kagent-cc uninstall    # 移除 hooks
 
             # VS Code / Cursor
