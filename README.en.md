@@ -11,13 +11,13 @@ One file = one ticker · First edit = IPO · Each edit round = one candle
 <img width="3840" height="2100" alt="preview" src="https://github.com/user-attachments/assets/bb6ad536-dbe3-4b6a-a077-55aea1e68bb2" />
 
 > [!NOTE]
-> The workspace must be **Trusted** for Cursor Hooks to collect data. Claude Code CLI has no such requirement.
+> The workspace must be **Trusted** for VS Code save capture to work. Claude Code CLI has no such requirement.
 
 ---
 
 ## Features
 
-- **Auto-capture**: Cursor `afterFileEdit` hook / Claude Code `PostToolUse` hook / VS Code save capture — three sources writing to the same `.kagent/`
+- **Auto-capture**: Claude Code `PostToolUse` hook / VS Code save capture, writing to the same `.kagent/`
 - **Dual visualization**: VS Code / Cursor sidebar webview (`lightweight-charts`) + terminal TUI (zero-dependency Node.js), sharing data in real time
 - **Fine-grained candles**: mixed delete/add in one round splits into two candles; same line count with rewritten content is tracked (semantic volatility)
 - **CN / US color scheme**: red-up / green-up switchable, with light / dark tone options
@@ -27,7 +27,39 @@ One file = one ticker · First edit = IPO · Each edit round = one candle
 
 ## Quick Start
 
-### 1. Install the extension (VS Code / Cursor)
+### Option 1: npx (recommended, no install)
+
+Run directly in your Claude Code working directory:
+
+```bash
+npx @enigma_soul/kagent-cc
+```
+
+This silently installs Claude Code hooks into the current project. After that, every file edit by Claude Code is automatically captured.
+
+View the K-line chart:
+
+```bash
+npx @enigma_soul/kagent-cc tui
+```
+
+| Command | Description |
+|---------|-------------|
+| `npx @enigma_soul/kagent-cc` | Silently install hooks (default) |
+| `npx @enigma_soul/kagent-cc install` | Same as above |
+| `npx @enigma_soul/kagent-cc tui` | Launch terminal K-line viewer |
+| `npx @enigma_soul/kagent-cc uninstall` | Remove hooks |
+
+Or install globally and use directly:
+
+```bash
+npm install -g @enigma_soul/kagent-cc
+kagent-cc              # Install hooks
+kagent-cc tui          # Launch TUI
+kagent-cc uninstall    # Remove hooks
+```
+
+### Option 2: VS Code / Cursor extension
 
 Install from [Open VSX](https://open-vsx.org/extension/JStone/kagent):
 
@@ -37,13 +69,13 @@ codium --install-extension JStone.kagent
 code --install-extension JStone.kagent
 ```
 
-Or download a `.vsix` from [GitHub Releases](https://github.com/JStone2934/KAgent/releases):
+Or download a `.vsix` from [GitHub Releases](https://github.com/Enigma-Soul/KAgent-CC/releases):
 
 ```bash
 cursor --install-extension kagent-0.1.9.vsix
 ```
 
-**Reload the window** after install.
+**Reload the window** after install. The extension auto-checks and installs Claude Code hooks on startup (silent).
 
 <details>
 <summary>Package from source</summary>
@@ -62,44 +94,18 @@ npm run package
 
 </details>
 
-### 2. Install hooks
-
-**Cursor**: open the repo root -> `Ctrl+Shift+P` -> `KAgent: 安装项目 Hooks`
-
-```
-.cursor/hooks.json
-.cursor/hooks/kagent-capture.mjs
-.kagent/                 # runtime data; installer adds to .gitignore
-```
-
-**Claude Code CLI**: this repo ships with configuration ready to use:
-
-```
-.claude/settings.json               # PostToolUse hook config (Edit|Write|MultiEdit)
-.claude/hooks/kagent-cc-capture.mjs  # capture script
-.claude/hooks/kagent-record.mjs      # shared recorder
-```
-
-To use in a new project, copy those three files under `.claude/`.
-
-### 3. View the market
+### View the market
 
 | Entry | Description |
 |-------|-------------|
+| `kagent-cc tui` | Terminal TUI (no extension needed) |
 | **KAgent** activity bar icon | VS Code / Cursor sidebar market |
 | `KAgent: 打开行情图` | Same view |
-| `node scripts/kagent-tui.mjs` | Terminal TUI (no extension needed) |
-
-**VS Code / Cursor sidebar**:
-
-- Left list: each tracked file = one ticker; ▲/▼ trend; 新 / 改 badges for recent IPO or edit
-- Right chart: candles + volume; click a row to open the file; pan/zoom preserved
-- Top-right: switch CN / US color scheme, light / dark tone
 
 **Terminal TUI**:
 
-```bash
-node scripts/kagent-tui.mjs
+```
+kagent-cc tui
 ```
 
 Zero-dependency Node.js. Claude Code edits refresh the chart in real time. State (selected file, color scheme) persists to `.kagent/tui-state.json`.
@@ -111,6 +117,12 @@ Zero-dependency Node.js. Claude Code edits refresh the chart in real time. State
 | `r` | Manual refresh |
 | `q` | Quit |
 
+**VS Code / Cursor sidebar**:
+
+- Left list: each tracked file = one ticker; ▲/▼ trend; 新 / 改 badges for recent IPO or edit
+- Right chart: candles + volume; click a row to open the file; pan/zoom preserved
+- Top-right: switch CN / US color scheme, light / dark tone
+
 ---
 
 ## Concept
@@ -121,13 +133,13 @@ Zero-dependency Node.js. Claude Code edits refresh the chart in real time. State
 | IPO | **First** recorded change to that file |
 | One candle | **One round** of edits (OHLC by line count + volume) |
 | ST delisted | **Manually deleted** tracked file; grayed out, removed after ~30 seconds |
-| Red / green | **Line count** up or down (CN: red up; US: green up — switchable) |
+| Red / green | **Line count** up or down (CN: red up; US: green up - switchable) |
 
 ---
 
 ## 30-second local demo
 
-No Agent required — simulate edits:
+No Agent required - simulate edits:
 
 ```bash
 node scripts/simulate-edit.mjs demo/sample.txt 3
@@ -142,15 +154,12 @@ Open the KAgent sidebar or TUI and select `demo/sample.txt`. Full walkthrough: [
 
 ```mermaid
 flowchart LR
-  A1[Cursor Agent edits file] --> B1[afterFileEdit Hook]
-  A2[Claude Code edits file] --> B2[PostToolUse Hook]
-  A3[Manual save] --> B3[onSave capture]
+  A1[Claude Code edits file] --> B1[PostToolUse Hook]
+  A2[Manual save] --> B2[onSave capture]
   B1 --> C[".kagent/events.ndjson"]
   B1 --> D[".kagent/symbols.json"]
   B2 --> C
   B2 --> D
-  B3 --> C
-  B3 --> D
   C --> E1[VS Code / Cursor extension]
   C --> E2[Terminal TUI]
   D --> E1
@@ -173,7 +182,7 @@ flowchart LR
 | Open / Close | **Line count** at start / end of the candle |
 | High / Low | Max / min line count in the round |
 | Volume | Lines removed or added |
-| Split round | Delete-then-add in one edit → two candles |
+| Split round | Delete-then-add in one edit -> two candles |
 | Color | Close ≥ open = bullish; CN red bullish, US green bullish |
 
 ---
@@ -182,11 +191,10 @@ flowchart LR
 
 | Issue | Fix |
 |-------|-----|
-| Can't find KAgent in Cursor | Cursor doesn't use Open VSX — use [VSIX](#1-install-the-extension-vs-code--cursor) or [Releases](https://github.com/JStone2934/KAgent/releases) |
 | Sidebar / TUI always empty | Install hooks or enable save capture, set workspace Trusted, edit/save files (or run the demo script) |
-| Hooks never fire | Open the **repo root**; verify `.cursor/hooks.json` or `.claude/settings.json` exists |
+| Hooks never fire | Open the **repo root**; verify `.claude/settings.json` exists |
 | No ST delisted after delete | Use ≥ 0.1.5, Reload Window, click Refresh; only applies to files already in the list |
-| `cursor` command not found | Install shell command to PATH from Cursor, restart terminal |
+| Can't find KAgent in Cursor | Cursor doesn't use Open VSX - use [VSIX](#option-2-vs-code--cursor-extension) or [Releases](https://github.com/Enigma-Soul/KAgent-CC/releases) |
 
 ---
 
@@ -195,6 +203,11 @@ flowchart LR
 ### Local build
 
 ```bash
+# npm package (requires Bun)
+bun build src/capture.mjs --outfile dist/capture.mjs
+bun build src/tui.mjs --outfile dist/tui.mjs
+
+# VS Code extension
 cd extension
 npm install && npm run compile   # dev: npm run watch
 npm run package                  # -> kagent-x.y.z.vsix
@@ -210,24 +223,16 @@ npm run package                  # -> kagent-x.y.z.vsix
 
 | Workflow | Purpose |
 |----------|---------|
-| [CI](.github/workflows/ci.yml) | On `main` / PR changes under `extension/`: compile and package VSIX |
-| [Release](.github/workflows/release.yml) | Manual release: bump version -> Open VSX -> push tag -> GitHub Release |
+| [CI](.github/workflows/ci.yml) | On push/PR: Bun bundle + compile extension + package VSIX |
+| [Release](.github/workflows/release.yml) | On tag `v*`: npm publish + Open VSX + GitHub Release |
 
 **Ship a version**
 
-1. Actions -> Release -> Run workflow
-2. Choose `patch` / `minor` / `major`
-3. Toggle Publish to Open VSX
-4. Download the VSIX from [Releases](https://github.com/JStone2934/KAgent/releases)
+1. `git tag v0.1.0 && git push --tags` triggers auto-release
+2. CI auto: Bun bundle -> npm publish -> extension compile -> Open VSX publish -> GitHub Release
+3. Download VSIX from [Releases](https://github.com/Enigma-Soul/KAgent-CC/releases)
 
-Manual publish (never paste the token on the command line; use an env var):
-
-```powershell
-cd extension
-$env:OVSX_PAT = "<your-token>"
-npm run package
-npx ovsx publish kagent-x.y.z.vsix --no-dependencies -p $env:OVSX_PAT
-```
+> Requires GitHub Secrets: `NPM_TOKEN` (npm access token), `OVSX_PAT` (Open VSX token)
 
 ---
 

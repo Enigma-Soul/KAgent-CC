@@ -11,13 +11,13 @@
 <img width="3840" height="2100" alt="preview" src="https://github.com/user-attachments/assets/6e2aea95-c8a2-4db9-820d-59e7608b2728" />
 
 > [!NOTE]
-> 工作区须为 **Trusted**，Cursor Hooks 才会采集数据。Claude Code CLI 无此限制。
+> 工作区须为 **Trusted**，VS Code 扩展的保存采集才会生效。Claude Code CLI 无此限制。
 
 ---
 
 ## 特性
 
-- **自动采集**：Cursor `afterFileEdit` Hook / Claude Code `PostToolUse` Hook / VS Code 保存采集，三路并行写入同一份 `.kagent/`
+- **自动采集**：Claude Code `PostToolUse` Hook / VS Code 保存采集，写入同一份 `.kagent/`
 - **双端可视化**：VS Code / Cursor 侧边栏 webview（`lightweight-charts`）+ 终端 TUI（零依赖纯 Node.js），共享数据实时同步
 - **细粒度 K 线**：同轮既有删又有增拆成两根；行数不变但内容被改写也记入（语义波动）
 - **A 股 / 美股**：红涨绿跌 / 绿涨红跌可切换，亮色 / 暗色色调可选
@@ -27,7 +27,39 @@
 
 ## 快速开始
 
-### 1. 安装扩展（VS Code / Cursor）
+### 方式一：npx（推荐，无需安装）
+
+在 Claude Code 工作目录下直接运行：
+
+```bash
+npx @enigma_soul/kagent-cc
+```
+
+这会静默安装 Claude Code hooks 到当前项目。之后 Claude Code 每次编辑文件都会自动采集行情。
+
+查看 K 线图：
+
+```bash
+npx @enigma_soul/kagent-cc tui
+```
+
+| 命令 | 说明 |
+|------|------|
+| `npx @enigma_soul/kagent-cc` | 静默安装 hooks（默认） |
+| `npx @enigma_soul/kagent-cc install` | 同上 |
+| `npx @enigma_soul/kagent-cc tui` | 启动终端 K 线查看器 |
+| `npx @enigma_soul/kagent-cc uninstall` | 移除 hooks |
+
+也可以全局安装后直接使用：
+
+```bash
+npm install -g @enigma_soul/kagent-cc
+kagent-cc              # 安装 hooks
+kagent-cc tui          # 启动 TUI
+kagent-cc uninstall    # 移除 hooks
+```
+
+### 方式二：VS Code / Cursor 扩展
 
 从 [Open VSX](https://open-vsx.org/extension/JStone/kagent) 安装：
 
@@ -37,13 +69,13 @@ codium --install-extension JStone.kagent
 code --install-extension JStone.kagent
 ```
 
-或从 [GitHub Releases](https://github.com/JStone2934/KAgent/releases) 下载 `.vsix`：
+或从 [GitHub Releases](https://github.com/Enigma-Soul/KAgent-CC/releases) 下载 `.vsix`：
 
 ```bash
 cursor --install-extension kagent-0.1.9.vsix
 ```
 
-安装后 **重新加载窗口**。
+安装后 **重新加载窗口**。扩展启动时会自动检查并安装 Claude Code hooks（静默）。
 
 <details>
 <summary>从源码打包</summary>
@@ -62,44 +94,18 @@ npm run package
 
 </details>
 
-### 2. 安装 Hooks
-
-**Cursor**：打开仓库根目录 → `Ctrl+Shift+P` → `KAgent: 安装项目 Hooks`
-
-```
-.cursor/hooks.json
-.cursor/hooks/kagent-capture.mjs
-.kagent/                 # 运行时数据；安装时会写入 .gitignore
-```
-
-**Claude Code CLI**：本仓库已自带配置，克隆即用：
-
-```
-.claude/settings.json               # PostToolUse Hook 配置（Edit|Write|MultiEdit）
-.claude/hooks/kagent-cc-capture.mjs  # 采集脚本
-.claude/hooks/kagent-record.mjs      # 共享记录器
-```
-
-在新项目中使用时，将 `.claude/` 下三个文件复制过去即可。
-
-### 3. 看行情
+### 看行情
 
 | 入口 | 说明 |
 |------|------|
+| `kagent-cc tui` | 终端 TUI（无需扩展） |
 | 活动栏 **KAgent** 图标 | VS Code / Cursor 侧边栏行情 |
 | `KAgent: 打开行情图` | 同上 |
-| `node scripts/kagent-tui.mjs` | 终端 TUI（无需扩展） |
-
-**VS Code / Cursor 侧边栏**：
-
-- 左侧列表：每个被跟踪文件 = 一支股票；▲/▼ 涨跌；新 / 改 标记
-- 右侧图表：K 线 + 成交量；点击列表项打开文件；拖动缩放后保留视图
-- 右上角：切换 A 股 / 美股、亮 / 暗
 
 **终端 TUI**：
 
-```bash
-node scripts/kagent-tui.mjs
+```
+kagent-cc tui
 ```
 
 零依赖纯 Node.js，Claude Code 每编辑一个文件实时刷新 K 线。状态（选中文件、配色）持久化到 `.kagent/tui-state.json`。
@@ -110,6 +116,12 @@ node scripts/kagent-tui.mjs
 | `s` | 切换 A 股 / 美股配色 |
 | `r` | 手动刷新 |
 | `q` | 退出 |
+
+**VS Code / Cursor 侧边栏**：
+
+- 左侧列表：每个被跟踪文件 = 一支股票；▲/▼ 涨跌；新 / 改 标记
+- 右侧图表：K 线 + 成交量；点击列表项打开文件；拖动缩放后保留视图
+- 右上角：切换 A 股 / 美股、亮 / 暗
 
 ---
 
@@ -142,15 +154,12 @@ node scripts/simulate-edit.mjs demo/sample.txt 1
 
 ```mermaid
 flowchart LR
-  A1[Cursor Agent 改文件] --> B1[afterFileEdit Hook]
-  A2[Claude Code 改文件] --> B2[PostToolUse Hook]
-  A3[手动保存] --> B3[onSave 采集]
+  A1[Claude Code 改文件] --> B1[PostToolUse Hook]
+  A2[手动保存] --> B2[onSave 采集]
   B1 --> C[".kagent/events.ndjson"]
   B1 --> D[".kagent/symbols.json"]
   B2 --> C
   B2 --> D
-  B3 --> C
-  B3 --> D
   C --> E1[VS Code / Cursor 扩展]
   C --> E2[终端 TUI]
   D --> E1
@@ -182,11 +191,10 @@ flowchart LR
 
 | 现象 | 处理 |
 |------|------|
-| Cursor 里搜不到 KAgent | Cursor 不走 Open VSX，用 [VSIX](#1-安装扩展vs-code--cursor) 或 [Releases](https://github.com/JStone2934/KAgent/releases) |
-| 侧边栏 / TUI 一直是空的 | 确认已安装 Hooks 或开启保存采集、工作区 Trusted、改过/保存过文件（或跑模拟脚本） |
-| Hooks 不触发 | 必须打开仓库根目录；检查 `.cursor/hooks.json` 或 `.claude/settings.json` 是否存在 |
+| 侧边栏 / TUI 一直是空的 | 确认已安装 hooks 或开启保存采集、工作区 Trusted、改过/保存过文件（或跑模拟脚本） |
+| Hooks 不触发 | 必须打开仓库根目录；检查 `.claude/settings.json` 是否存在 |
 | 删文件后没有 ST 退市 | 安装 ≥ 0.1.5 并 Reload Window；点刷新行情；仅对已出现在列表中的文件生效 |
-| `cursor` 命令找不到 | 在 Cursor 中安装 Shell 命令到 PATH，重启终端 |
+| Cursor 里搜不到 KAgent | Cursor 不走 Open VSX，用 [VSIX](#方式二vs-code--cursor-扩展) 或 [Releases](https://github.com/Enigma-Soul/KAgent-CC/releases) |
 
 ---
 
@@ -195,6 +203,11 @@ flowchart LR
 ### 本地构建
 
 ```bash
+# npm 包（需要 Bun）
+bun build src/capture.mjs --outfile dist/capture.mjs
+bun build src/tui.mjs --outfile dist/tui.mjs
+
+# VS Code 扩展
 cd extension
 npm install && npm run compile   # 日常开发：npm run watch
 npm run package                  # 产出 kagent-x.y.z.vsix
@@ -210,24 +223,16 @@ npm run package                  # 产出 kagent-x.y.z.vsix
 
 | Workflow | 作用 |
 |----------|------|
-| [CI](.github/workflows/ci.yml) | `main` / PR 变更 `extension/` 时自动编译并打包 VSIX |
-| [Release](.github/workflows/release.yml) | 手动发版：递增版本 → Open VSX → 推送 tag → GitHub Release |
+| [CI](.github/workflows/ci.yml) | push/PR 时 Bun 打包 + 编译扩展 + 打包 VSIX |
+| [Release](.github/workflows/release.yml) | tag `v*` 触发：npm publish + Open VSX + GitHub Release |
 
 **发版步骤**
 
-1. Actions → Release → Run workflow
-2. 选择 `patch` / `minor` / `major`
-3. 勾选 Publish to Open VSX
-4. 完成后在 [Releases](https://github.com/JStone2934/KAgent/releases) 下载 VSIX
+1. `git tag v0.1.0 && git push --tags` 触发自动发版
+2. CI 自动：Bun 打包 -> npm publish -> 扩展编译 -> Open VSX publish -> GitHub Release
+3. 完成后在 [Releases](https://github.com/Enigma-Soul/KAgent-CC/releases) 下载 VSIX
 
-本地手动发布（勿在命令行明文粘贴 token）：
-
-```powershell
-cd extension
-$env:OVSX_PAT = "<your-token>"
-npm run package
-npx ovsx publish kagent-x.y.z.vsix --no-dependencies -p $env:OVSX_PAT
-```
+> 需要配置 GitHub Secrets：`NPM_TOKEN`（npm access token）、`OVSX_PAT`（Open VSX token）
 
 ---
 
