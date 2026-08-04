@@ -1,3 +1,10 @@
+# 0.1.2
+
+### Fix(cli)
+
+- Bun 打包加 `--external node:fs --external node:path`，修复 `node:fs` 内联后 `fs` 变量丢失导致 hook 静默失败
+- `src/capture.mjs` 显式 `import fs from "node:fs"`，确保 bundle 后保留
+
 # 0.1.1
 
 ### Fix(cli)
