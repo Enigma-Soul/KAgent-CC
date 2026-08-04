@@ -1,3 +1,10 @@
+# 0.1.3
+
+### Fix(cli)
+
+- Bun 打包用 `--external "node:*"` 保留所有 Node.js 内置模块 import，修复 `node:fs` 内联后变量丢失导致 hook 静默失败
+- 本地验证：hook 正常写入 `.kagent/events.ndjson`
+
 # 0.1.2
 
 ### Fix(cli)

@@ -110,8 +110,8 @@ jobs:
 
       - name: Bundle dist
         run: |
-          bun build src/capture.mjs --external node:fs --external node:path --outfile dist/capture.mjs
-          bun build src/tui.mjs --external node:fs --external node:path --outfile dist/tui.mjs
+          bun build src/capture.mjs --external "node:*" --outfile dist/capture.mjs
+          bun build src/tui.mjs --external "node:*" --outfile dist/tui.mjs
 
       - name: Publish to npm
         run: npm publish --access public
